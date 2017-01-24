@@ -16,6 +16,7 @@ libraryDependencies += "io.circe" %% "circe-generic" % "0.7.0"
 
 libraryDependencies += "io.circe" %% "circe-parser" % "0.7.0"
 
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.3.4"
 
 // for debugging sbt problems
 logLevel := Level.Debug

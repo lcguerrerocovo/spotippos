@@ -5,14 +5,15 @@ import cats.syntax.either._
 
 import java.io.FileInputStream
 import io.circe.Json
-import io.circe.Decoder
 
 import scala.collection.mutable
 import scala.io.Source
 
 import io.circe.generic.auto._
 
-
+/**
+  * Created by luisguerrero
+  */
 case class Property(id: Int, title: String, price: Int, description: String,
                     lat: Int, long: Int, beds: Int, baths: Int,
                     squareMeters: Int)
@@ -23,10 +24,11 @@ case class PropertyWithProvince(id: Int, title: String, price: Int, description:
 
 object Property {
 
-  var rangeTree: RangeTree = null
   var propertyMapById: mutable.Map[Int, Property] = null
   var propertyMapByCoordinate: mutable.Map[(Int,Int), Int] = null
   var provinces: List[Province] = null
+  var propertiesToIndex: List[Int] = Nil
+  var rangeTree: RangeTree = null
 
   def readPropertyFile = {
     val propertyList = fileToJsonDecoder[List[Property]](
@@ -37,9 +39,17 @@ object Property {
     provinces = provinceNameList.map(x =>
       ((provinceJson.hcursor.downField(x).as[String => Province].map(y => y(x)).getOrElse(null)))).toList
 
-    rangeTree = new RangeTree(propertyList.map(x => (x.lat,x.long)).toArray)
-    propertyMapById = scala.collection.mutable.Map(propertyList.map(x => x.id -> x).toMap.toSeq: _*)
-    propertyMapByCoordinate = scala.collection.mutable.Map(propertyList.map(x => (x.lat,x.long) -> x.id).toMap.toSeq: _*)
+    propertyMapById = scala.collection.concurrent.TrieMap(propertyList.map(x => x.id -> x).toMap.toSeq: _*)
+    propertyMapByCoordinate = scala.collection.concurrent.TrieMap(propertyList.map(x => (x.lat,x.long) -> x.id).toMap.toSeq: _*)
+  }
+
+  // range tree will only be rebuilt if there were properties added since it was last built
+  def buildRangeTree = {
+    if(!propertiesToIndex.isEmpty) {
+      println("building range tree for optimized coordinate grid search")
+      rangeTree = new RangeTree(propertyMapById.toArray.map(x => (x._2.lat, x._2.long)))
+    }
+    propertiesToIndex = Nil
   }
 
   def fileToJsonDecoder[T](filename: String, transform: Json => T): T = {
@@ -69,8 +79,27 @@ object Property {
         } yield(provinces(i).name)).toList)
   }
 
+  def addProperty(property: Property) = {
+    this.synchronized {
+      Property.propertyMapById += property.id -> property;
+      Property.propertyMapByCoordinate += (property.lat, property.long) -> property.id;
+      propertiesToIndex = property.id :: propertiesToIndex
+    }
+    property
+  }
+
+  // these two functions here could be simplified, don't know how yet
+  def getPropertyByIdWithException(id: Int): PropertyWithProvince = {
+    propertyMapById.get(id) match {
+      case Some(property) => Property.provinces(property)
+      case None => throw new Exception()
+    }
+  }
+
   def getPropertyById(id: Int): PropertyWithProvince = {
-    propertyMapById.get(id) match { case Some(property) => Property.provinces(property)}
+    propertyMapById.get(id) match {
+      case Some(property) => Property.provinces(property)
+    }
   }
 
   def getPropertyByCoordinates(xy: (Int,Int)): PropertyWithProvince = {

@@ -1,21 +1,28 @@
 package com.vivareal.spotippos
 
+import java.util.concurrent.TimeUnit
+
 import com.twitter.finagle.{Http, Service}
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.server.TwitterServer
-import com.twitter.util.Await
+import com.twitter.util.{Duration, Await}
 import com.twitter.app.Flag
 import io.circe.generic.auto._
 import io.finch._
 import io.finch.circe._
+import akka.actor.ActorSystem
 
+import scala.concurrent.duration.FiniteDuration
 
+/**
+  * Created by luisguerrero
+  */
 object Main extends TwitterServer {
 
   val port: Flag[Int] = flag("port", 8081, "TCP port for HTTP server")
 
   def getProperty: Endpoint[PropertyWithProvince] = get("properties" :: int) { id: Int =>
-    Ok(Property.propertyMapById.get(id) match { case Some(property) => Property.provinces(property) case None => throw new Exception()})
+    Ok(Property.getPropertyByIdWithException(id))
   }
 
   def createProperty: Endpoint[Property]
@@ -28,10 +35,7 @@ object Main extends TwitterServer {
                   {x => x.baths >= 0 && x.baths <= 4}
                 .should("have area in range")
                   {x => x.squareMeters >= 20 && x.squareMeters <= 240}) { p: Property =>
-    val id = Property.nextId
-    Property.propertyMapById += id -> p;
-    Property.propertyMapByCoordinate += (p.lat,p.long) -> id;
-    Created(p)
+    Created(Property.addProperty(p))
   }
 
   def inRange(low: Int, high: Int, dimension: Char)
@@ -58,9 +62,19 @@ object Main extends TwitterServer {
     case e: Exception => NotFound(e)
   }).toServiceAs[Application.Json]
 
+  def recurringTasks = Property.buildRangeTree
+
   def main(): Unit = {
     log.info("Spotippos server running")
     Property.readPropertyFile
+
+    log.info("scheduling tasks")
+    val actorSystem = ActorSystem()
+    implicit val executor = actorSystem.dispatcher
+
+    val startDelay = FiniteDuration(0L, TimeUnit.SECONDS)
+    val intervalDelay = FiniteDuration(3000L, TimeUnit.SECONDS)
+    actorSystem.scheduler.schedule(startDelay,intervalDelay)(recurringTasks)
 
     val server = Http.server
       .withStatsReceiver(statsReceiver)
