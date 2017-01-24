@@ -73,7 +73,7 @@ object Main extends TwitterServer {
     implicit val executor = actorSystem.dispatcher
 
     val startDelay = FiniteDuration(0L, TimeUnit.SECONDS)
-    val intervalDelay = FiniteDuration(3000L, TimeUnit.SECONDS)
+    val intervalDelay = FiniteDuration(360L, TimeUnit.SECONDS)
     actorSystem.scheduler.schedule(startDelay,intervalDelay)(recurringTasks)
 
     val server = Http.server
