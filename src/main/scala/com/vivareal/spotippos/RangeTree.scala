@@ -23,10 +23,11 @@ class RangeTree(var arr: Array[(Int,Int)]) {
         val left = createRangeTree(arr.slice(0, half), dimension)
         val right = createRangeTree(arr.slice(half, arr.length), dimension)
         if (dimension == 1) {
-          val invertedCoordArr = groupSequential(arr.flatMap(xy => xy.map(z => (z._2,z._1))).sortWith((x, y) => x._1 < y._1))
-          val innerD = createRangeTree(invertedCoordArr,2)
-          Inner(left, right, arr(half).head,innerD)
-        } else Inner(left, right, arr(half).head)
+          val invertedCoordArr = groupSequential(arr.flatMap(xy => xy.map(z => (z._2, z._1))).sortWith((x, y) => x._1 < y._1))
+          val innerD = createRangeTree(invertedCoordArr, 2)
+          Inner(left, right, arr(half).head, innerD)
+        }
+        else Inner(left, right, arr(half).head)
       }
     }
     createRangeTree(groupSequential(arr.sortWith((x, y) => x._1 < y._1)),1)
@@ -37,9 +38,9 @@ class RangeTree(var arr: Array[(Int,Int)]) {
       case Inner(left, right, xy, innerD) => {
         def greaterThanMin = xy._1 > range._1
         def lessThanMax = xy._1 < range._2
-        if (greaterThanMin && lessThanMax && !xs.isEmpty) {
+        if (greaterThanMin && lessThanMax && !xs.isEmpty)
           Inner(left, right, xy, innerD) :: xs
-        } else {
+        else {
           val leftPrune = if (greaterThanMin) pruneByRange(left, range, xs) else xs
           if (xy._1 <= range._2) pruneByRange(right, range, leftPrune) else leftPrune
         }
