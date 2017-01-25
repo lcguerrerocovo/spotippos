@@ -5,7 +5,7 @@ package com.vivareal.spotippos
   */
 class RangeTree(var arr: Array[(Int,Int)]) {
 
-  val area: Tree = createRangeTree(arr)
+  val root: Tree = createRangeTree(arr)
 
   private def createRangeTree(arr: Array[(Int,Int)]): Tree = {
     def groupSequential(arr: Array[(Int,Int)]): Array[List[(Int,Int)]] = {
@@ -60,7 +60,7 @@ class RangeTree(var arr: Array[(Int,Int)]) {
   }
 
   def search(xRange: (Int,Int), yRange: (Int,Int)): List[(Int,Int)] = {
-    val prunedXRange = pruneByRange(area,xRange)
+    val prunedXRange = pruneByRange(root,xRange)
 
     val innerTrees = prunedXRange.map {
       case Inner(_,_,_,innerD) => innerD
