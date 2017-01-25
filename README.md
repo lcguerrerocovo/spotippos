@@ -33,7 +33,7 @@ curl -X GET "http://localhost:8081/properties/8000"
 
 ```
 
-```
+```json
 {
   "id": 8000,
   "title": "Imóvel código 8000, com 5 quartos e 4 banheiros.",
@@ -56,7 +56,7 @@ curl -X GET "http://localhost:8081/properties/8000"
 curl -X GET "http://localhost:8081/properties?ax=500&ay=500&bx=515&by=515"
 ```
 
-```
+```json
 {
   "foundProperties": 2,
   "properties": [
@@ -109,7 +109,7 @@ curl -X POST -H "Content-Type: application/json" -d '{
 }' "http://localhost:8081/properties"
 ```
 
-```
+```json
 {
   "id": 8001,
   "title": "Simply the best",
@@ -132,7 +132,7 @@ curl -X POST -H "Content-Type: application/json" -d '{
 curl -X GET "http://localhost:8081/properties?ax=660&ay=660&bx=670&by=670"
 ```
 
-```
+```json
 {
   "foundProperties": 1,
   "properties": [
