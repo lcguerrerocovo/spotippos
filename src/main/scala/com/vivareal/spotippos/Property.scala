@@ -30,7 +30,7 @@ object Property {
   var propertiesToIndex: List[Int] = Nil
   var rangeTree: RangeTree = null
 
-  def readPropertyFile = {
+  def readPropertyFile: Unit = {
     val propertyList = fileToJsonDecoder[List[Property]](
       "properties.json", ((x: Json) => x.hcursor.downField("properties")
                                         .as[List[Property]].getOrElse(List())))
@@ -41,15 +41,20 @@ object Property {
 
     propertyMapById = scala.collection.concurrent.TrieMap(propertyList.map(x => x.id -> x).toMap.toSeq: _*)
     propertyMapByCoordinate = scala.collection.concurrent.TrieMap(propertyList.map(x => (x.lat,x.long) -> x.id).toMap.toSeq: _*)
+    buildRangeTree
   }
 
   // range tree will only be rebuilt if there were properties added since it was last built
-  def buildRangeTree = {
+  def rebuildRangeTree: Unit = {
     if(!propertiesToIndex.isEmpty) {
       println("building range tree for optimized coordinate grid search")
-      rangeTree = new RangeTree(propertyMapById.toArray.map(x => (x._2.lat, x._2.long)))
+      buildRangeTree
     }
     propertiesToIndex = Nil
+  }
+
+  def buildRangeTree: Unit = {
+    rangeTree = new RangeTree(propertyMapById.toArray.map(x => (x._2.lat, x._2.long)))
   }
 
   def fileToJsonDecoder[T](filename: String, transform: Json => T): T = {

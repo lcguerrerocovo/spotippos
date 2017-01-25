@@ -25,7 +25,7 @@ object Main extends TwitterServer {
     Ok(Property.getPropertyByIdWithException(id))
   }
 
-  def createProperty: Endpoint[Property]
+  def createProperty: Endpoint[PropertyWithProvince]
         = post("properties" :: jsonBody[Int => Property].map(_(Property.nextId))
                 .should("have coordinates in Range")
                   {x => x.lat >= 0 && x.lat <= 1400 && x.long >= 0 && x.long <= 1000}
@@ -35,7 +35,8 @@ object Main extends TwitterServer {
                   {x => x.baths >= 0 && x.baths <= 4}
                 .should("have area in range")
                   {x => x.squareMeters >= 20 && x.squareMeters <= 240}) { p: Property =>
-    Created(Property.addProperty(p))
+    Property.addProperty(p)
+    Created(Property.getPropertyById(p.id))
   }
 
   def inRange(low: Int, high: Int, dimension: Char)
@@ -72,7 +73,7 @@ object Main extends TwitterServer {
     val actorSystem = ActorSystem()
     implicit val executor = actorSystem.dispatcher
 
-    val startDelay = FiniteDuration(0L, TimeUnit.SECONDS)
+    val startDelay = FiniteDuration(360L, TimeUnit.SECONDS)
     val intervalDelay = FiniteDuration(360L, TimeUnit.SECONDS)
     actorSystem.scheduler.schedule(startDelay,intervalDelay)(recurringTasks)
 
